@@ -1,26 +1,39 @@
-use std::{net::{TcpListener, TcpStream}, io::{Result, Read, Write}};
-
+use std::{
+    io::{self, Result, Write, Read},
+    net::{TcpListener, TcpStream},
+    thread,
+};
 
 fn main() -> Result<()> {
     let listener = TcpListener::bind("127.0.0.1:6379")?;
 
     for stream in listener.incoming() {
-        let stream = stream.unwrap();
-        handle_request(stream);
+        match stream {
+            Ok(mut s) => {
+                handle_request(s);
+            },
+            Err(_) => {
+                println!("error stablishing connection");
+            }
+        }
     }
 
     Ok(())
 }
 
 fn handle_request(mut stream: TcpStream) {
-    let mut buffer = [0; 1024];
-    let ping = b"*1\r\n$4\r\nping\r\n";
+    let mut buf = [0; 512];
 
-    stream.read(&mut buffer).unwrap();
-
-    if buffer.starts_with(ping) {
-        stream.write(b"+PONG\r\n").unwrap();
-        stream.flush().unwrap();
+    loop {
+        match stream.read(&mut buf) {
+            Ok(_size) => {
+                stream.write(b"+PONG\r\n").unwrap();
+                stream.flush().unwrap();
+            },
+            Err(_) => {
+                break;
+            }
+        }
     }
-    
+
 }
