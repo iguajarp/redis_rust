@@ -30,8 +30,10 @@ fn handle_request(mut stream: TcpStream) {
     loop {
         match stream.read(&mut buf) {
             Ok(_size) => {
-                stream.write(b"+PONG\r\n").unwrap();
-                stream.flush().unwrap();
+                if buf.starts_with(b"*2\r\n$4\r\nECHO\r\n$3\r\nhey\r\n") {
+                    stream.write(b"+PONG\r\n").unwrap();
+                    stream.flush().unwrap();
+                }
             },
             Err(_) => {
                 break;
