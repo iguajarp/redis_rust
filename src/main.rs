@@ -2,7 +2,7 @@ use std::{
     io::{Read, Result, Write},
     net::{TcpListener, TcpStream},
     thread,
-    str::{self, from_utf8}, string
+    str::{self, from_utf8},
 };
 
 fn main() -> Result<()> {
