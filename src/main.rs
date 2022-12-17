@@ -1,55 +1,50 @@
-use std::{
-    io::{Read, Result, Write},
-    net::{TcpListener, TcpStream},
-    thread,
-    str::{self, from_utf8},
-};
+use anyhow::Result;
+use bytes::BytesMut;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{TcpListener, TcpStream};
 
-fn main() -> Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:6379")?;
-    listener
-        .set_nonblocking(true)
-        .expect("failed to set non-blocking tcp_listener");
+mod resp;
 
-    for stream in listener.incoming() {
-        match stream {
-            Ok(s) => {
-                thread::spawn(move || {
-                    handle_request(s);
+#[tokio::main]
+async fn main() -> Result<()> {
+    let mut listener = TcpListener::bind("127.0.0.1:6379").await?;
+
+    loop {
+        let incoming = listener.accept().await;
+        match incoming {
+            Ok((stream, _)) => {
+                println!("accepted new connection");
+                tokio::spawn(async move {
+                    handle_connection(stream).await.unwrap();
                 });
             }
-            Err(_) => {}
+            Err(e) => {
+                println!("error: {}", e);
+            }
+        }
+    }
+
+}
+
+async fn handle_connection(stream: TcpStream) -> Result<()> {
+    let mut conn = resp::RespConnection::new(stream);
+
+    loop {
+        let value = conn.read_value().await?;
+
+        if let Some(value) = value {
+            let (command, args) = value.to_command()?;
+            let response = match command.to_ascii_lowercase().as_ref() {
+                "ping" => resp::Value::SimpleString("PONG".to_string()),
+                "echo" => args.first().unwrap().clone(),
+                _ => resp::Value::Error(format!("command not implemented: {}", command)),
+            };
+
+            conn.write_value(response).await?;
+        } else {
+            break;
         }
     }
 
     Ok(())
-}
-
-fn handle_request(mut stream: TcpStream) {
-    let mut buf = [0; 512];
-
-    loop {
-        match stream.read(&mut buf) {
-            Ok(_size) => {
-                if buf.starts_with(b"*2\r\n$4\r\necho") {
-                    let echo = echo_string(&mut buf);
-                    stream.write(format!("+{echo}\r\n").as_bytes()).unwrap();
-                } else if buf.starts_with(b"*1\r\n$4\r\nping\r\n") {
-                    stream.write(b"+PONG\r\n").unwrap();
-                } else {
-                    stream.write(b"+Invalid request\r\n").unwrap();
-                }
-                stream.flush().unwrap();
-            }
-            Err(_) => {
-                break;
-            }
-        }
-    }
-}
-
-fn echo_string(buf: &mut [u8; 512]) -> &str {
-    let string_command = from_utf8(buf).unwrap();
-    let splitted: Vec<&str> = string_command.split("\r\n").collect();
-    splitted[4]
 }
