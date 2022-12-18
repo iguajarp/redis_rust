@@ -33,7 +33,7 @@ async fn handle_connection(stream: TcpStream) -> Result<()> {
         let value = conn.read_value().await?;
 
         if let Some(value) = value {
-            let (command, args) = value.to_command()?;
+            let (command, args) = value.to_command()?; // If string command, return early, then panic at parent fragment
             let response = match command.to_ascii_lowercase().as_ref() {
                 "ping" => resp::Value::SimpleString("PONG".to_string()),
                 "echo" => args.first().unwrap().clone(),
