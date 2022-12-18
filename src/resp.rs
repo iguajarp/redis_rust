@@ -1,5 +1,5 @@
 use anyhow::{Error, Result, Ok};
-use bytes::{BytesMut, Bytes};
+use bytes::{BytesMut};
 use tokio::{io::AsyncReadExt, io::AsyncWriteExt, net::TcpStream};
 
 const CARRIAGE_RETURN: u8 = '\r' as u8;
