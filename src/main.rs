@@ -37,12 +37,17 @@ async fn handle_connection(stream: TcpStream) -> Result<()> {
             let response = match command.to_ascii_lowercase().as_ref() {
                 "ping" => resp::Value::SimpleString("PONG".to_string()),
                 "echo" => args.first().unwrap().clone(),
-                // TODO: if SET, process the command, saving the key - value in a hashmap.
-                // make cache singleton
-                // implement method to save value with key in cache
-                // implement method to get value from key or error msg
-                // maybe a method from value to process set args
-                // TODO: panic if there is a problem?
+                /*
+                    TODO: implement cache system
+                    1) if command is set, check that args are len 2.
+                        1.1) if not, responde with error msg
+                    2) get singleton cache.
+                    3) create method to get value if exists or None at cache.
+                    4) save key - value in cache singleton
+                    5) return Value::SingleString("OK") or Value::SingleString("Error setting value")
+                    6) implement "GET" command using cache.getValue()
+                    
+                */
                 "SET" => resp::Value::SimpleString("OK".to_string()),
                 _ => resp::Value::Error(format!("command not implemented: {}", command)),
             };
