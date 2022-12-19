@@ -2,6 +2,8 @@ use anyhow::{Error, Result, Ok};
 use bytes::{BytesMut};
 use tokio::{io::AsyncReadExt, io::AsyncWriteExt, net::TcpStream};
 
+use super::cache::Cache;
+
 const CARRIAGE_RETURN: u8 = '\r' as u8;
 const NEWLINE: u8 = '\n' as u8;
 
@@ -47,6 +49,7 @@ impl Value {
 pub struct RespConnection {
     stream: TcpStream,
     buffer: BytesMut,
+    cache: Cache,
 }
 
 impl RespConnection {
@@ -54,6 +57,7 @@ impl RespConnection {
         return RespConnection {
             stream,
             buffer: BytesMut::with_capacity(512),
+            cache: Cache::new(),
         }
     }
 
