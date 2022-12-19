@@ -1,24 +1,29 @@
+use std::sync::{Arc, Mutex};
+
 use anyhow::Result;
 use bytes::BytesMut;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
-
 mod cache;
+use cache::Cache;
 
 mod resp;
+use resp::Value::*;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let mut listener = TcpListener::bind("127.0.0.1:6379").await?;
+    let cache = Arc::new(Mutex::new(Cache::new()));
 
     loop {
         let incoming = listener.accept().await;
+        let client_cache = cache.clone();
         match incoming {
             Ok((stream, _)) => {
                 println!("accepted new connection");
                 tokio::spawn(async move {
-                    handle_connection(stream).await.unwrap();
+                    handle_connection(stream, client_cache).await.unwrap();
                 });
             }
             Err(e) => {
@@ -26,10 +31,9 @@ async fn main() -> Result<()> {
             }
         }
     }
-
 }
 
-async fn handle_connection(stream: TcpStream) -> Result<()> {
+async fn handle_connection(stream: TcpStream, client_cache: Arc<Mutex<Cache>>) -> Result<()> {
     let mut conn = resp::RespConnection::new(stream);
 
     loop {
@@ -41,17 +45,19 @@ async fn handle_connection(stream: TcpStream) -> Result<()> {
                 "ping" => resp::Value::SimpleString("PONG".to_string()),
                 "echo" => args.first().unwrap().clone(),
                 /*
-                    TODO: implement cache system
-                    1) if command is set, check that args are len 2.
-                        1.1) if not, responde with error msg
-                    2) get singleton cache.
-                    3) create method to get value if exists or None at cache.
-                    4) save key - value in cache singleton
-                    5) return Value::SingleString("OK") or Value::SingleString("Error setting value")
                     6) implement "GET" command using cache.getValue()
-                    
+
                 */
-                "SET" => resp::Value::SimpleString("OK".to_string()),
+                "SET" => {
+                    if let (Some(BulkString(key)), Some(BulkString(value))) =
+                        (args.get(0), args.get(1))
+                    {
+                        client_cache.lock().unwrap().set(key.clone(), value.clone());
+                        SimpleString("OK".to_string())
+                    } else {
+                        Error("Set requires two arguments".to_string())
+                    }
+                }
                 _ => resp::Value::Error(format!("command not implemented: {}", command)),
             };
 

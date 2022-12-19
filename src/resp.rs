@@ -49,7 +49,6 @@ impl Value {
 pub struct RespConnection {
     stream: TcpStream,
     buffer: BytesMut,
-    cache: Cache,
 }
 
 impl RespConnection {
@@ -57,7 +56,6 @@ impl RespConnection {
         return RespConnection {
             stream,
             buffer: BytesMut::with_capacity(512),
-            cache: Cache::new(),
         }
     }
 
