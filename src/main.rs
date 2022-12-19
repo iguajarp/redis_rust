@@ -44,11 +44,18 @@ async fn handle_connection(stream: TcpStream, client_cache: Arc<Mutex<Cache>>) -
             let response = match command.to_ascii_lowercase().as_ref() {
                 "ping" => resp::Value::SimpleString("PONG".to_string()),
                 "echo" => args.first().unwrap().clone(),
-                /*
-                    6) implement "GET" command using cache.getValue()
-
-                */
-                "SET" => {
+                "get" => {
+                    if let Some(BulkString(key)) = args.get(0) {
+                        if let Some(value) = client_cache.lock().unwrap().get(key.clone()) {
+                            SimpleString(value)
+                        } else {
+                            Null
+                        }
+                    } else {
+                        Error("Get requires one argument".to_string())
+                    }
+                }
+                "set" => {
                     if let (Some(BulkString(key)), Some(BulkString(value))) =
                         (args.get(0), args.get(1))
                     {

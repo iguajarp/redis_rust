@@ -5,7 +5,7 @@ pub struct Cache {
 }
 
 impl Cache {
-    pub fn new() -> Cache {
+    pub fn new() -> Self {
         Cache {
             data: HashMap::new(),
         }
@@ -15,7 +15,7 @@ impl Cache {
         self.data.insert(key, value);
     }
 
-    pub fn get(&mut self, key: String, value: String) {
-        self.data.get(key.as_str()).cloned();
+    pub fn get(&mut self, key: String) -> Option<String> {
+        self.data.get(key.as_str()).cloned()
     }
 }

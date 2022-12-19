@@ -9,6 +9,7 @@ const NEWLINE: u8 = '\n' as u8;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum Value {
+    Null,
     SimpleString(String),
     Error(String),
     BulkString(String),
@@ -38,6 +39,7 @@ impl Value {
 
     pub fn encode(self) -> String {
         match &self {
+            Value::Null => "$-1\r\n".to_string(),
             Value::SimpleString(s) => format!("+{}\r\n", s.as_str()),
             Value::Error(msg) => format!("-{}\r\n", msg.as_str()),
             Value::BulkString(s) => format!("${}\r\n{}\r\n", s.chars().count(), s),
