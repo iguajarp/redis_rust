@@ -2,8 +2,6 @@ use anyhow::{Error, Result, Ok};
 use bytes::{BytesMut};
 use tokio::{io::AsyncReadExt, io::AsyncWriteExt, net::TcpStream};
 
-use super::cache::Cache;
-
 const CARRIAGE_RETURN: u8 = '\r' as u8;
 const NEWLINE: u8 = '\n' as u8;
 
